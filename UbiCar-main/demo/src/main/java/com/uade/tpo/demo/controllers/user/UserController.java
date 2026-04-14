@@ -34,7 +34,7 @@ public class UserController {
     
     @PutMapping("user/actualizar") //Actualizar datos del usuario logueado
     public ResponseEntity<UserResponse> updateMyProfile(
-            @RequestBody UpdateUserRequest request) {
+            @RequestBody UpdateUserRequest request)  {
         return ResponseEntity.ok(userService.updateMyProfile(request));
     }
 

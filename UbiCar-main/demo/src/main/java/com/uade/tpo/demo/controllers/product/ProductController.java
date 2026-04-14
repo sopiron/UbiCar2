@@ -35,19 +35,19 @@ public class ProductController {
 
     //Listar productos
 
-    @GetMapping // Obtener productos disponibles en esa fecha
+    @GetMapping ("/obtener/productosDisponibles")// Obtener productos disponibles en esa fecha
     public ResponseEntity<List<Product>> getAvailableProducts(@RequestParam LocalDate date) { //agregar excepcion por si no pone parametro
         return ResponseEntity.ok(productService.getAvailableProducts(date));
     }
     
 
-    @GetMapping("/active") //Obtener todos los productos
+    @GetMapping("/obtener/productosActivos") //Obtener todos los productos
     public ResponseEntity<List<Product>> getActiveProducts() {
         return ResponseEntity.ok(productService.getActiveProducts());
     }
     
 
-    @GetMapping("/{id}") //Ver detalles de un producto por id
+    @GetMapping("/obtener/{id}") //Ver detalles de un producto por id
     public ResponseEntity<Product> getProductById(@PathVariable Long id) {
 
         Optional<Product> product = productService.getProductById(id);
@@ -58,7 +58,7 @@ public class ProductController {
     }
     
 
-    @PostMapping //Crear un nuevo producto
+    @PostMapping ("/crear")//Crear un nuevo producto
     public ResponseEntity<Product> createProduct(@RequestBody ProductRequest request) {
         
         return ResponseEntity.ok(productService.createProduct(request));

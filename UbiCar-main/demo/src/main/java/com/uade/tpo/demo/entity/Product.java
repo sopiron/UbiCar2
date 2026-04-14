@@ -2,6 +2,7 @@ package com.uade.tpo.demo.entity;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -55,6 +56,7 @@ public class Product {
     @Column(nullable = true)
     private VehicleType vehicleType;
 
+    @JsonIgnore
     @ManyToOne //FK
     @JoinColumn(name = "seller_id", nullable = true)
     private User seller;

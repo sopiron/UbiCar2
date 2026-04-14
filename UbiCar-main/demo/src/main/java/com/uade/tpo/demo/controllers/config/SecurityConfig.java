@@ -55,6 +55,10 @@ public class SecurityConfig {
                                                 .requestMatchers("/users/sellers/**")
                                                 .permitAll() // cualquier usuario puede ver los vendedores y sus perfiles
 
+                                                //productos
+                                                .requestMatchers("/products/obtener/**")
+                                                .permitAll() // cualquier usuario puede ver los productos disponibles y activos
+
                                                 // user loggeado puede acceder a su perfil y actualizarlo
                                                 .requestMatchers("/users/user/obtener", "/users/user/actualizar")
                                                 .authenticated()
@@ -64,6 +68,9 @@ public class SecurityConfig {
                                                 .hasRole("ADMIN")
 
                                                 .requestMatchers("/cart/**").authenticated()
+
+                                                // solo el vendedor puede crear productos
+                                                .requestMatchers("/product/crear").hasAnyRole("SELLER")
                                         
                                                 // cualquier otra request
                                                 .anyRequest().authenticated()
