@@ -1,0 +1,15 @@
+package com.uade.tpo.demo.controllers.user;
+
+import com.uade.tpo.demo.entity.Role;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class ChangeRoleRequest {
+
+    private Role role;
+}
