@@ -62,7 +62,7 @@ public class Product {
     private User seller;
 
     @OneToMany(mappedBy = "product")
-    private List<ProductImage> images;
+    private List<Image> images;
 
     @OneToMany(mappedBy = "product")
     private List<BlockedDate> blockedDates;
