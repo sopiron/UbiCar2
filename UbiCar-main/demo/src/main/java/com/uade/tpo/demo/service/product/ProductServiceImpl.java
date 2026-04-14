@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.neo4j.Neo4jProperties.Authentication;
 import org.springframework.stereotype.Service;
 
 import com.uade.tpo.demo.controllers.product.ProductRequest;
@@ -15,6 +16,7 @@ import com.uade.tpo.demo.entity.User;
 import com.uade.tpo.demo.entity.VehicleType;
 import com.uade.tpo.demo.repository.ProductRepository;
 import com.uade.tpo.demo.repository.UserRepository;
+import com.uade.tpo.demo.service.AuthenticationService;
 
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -24,6 +26,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private AuthenticationService authenticationService;
 
   
     public List<Product> getAvailableProducts(LocalDate date) {
@@ -43,7 +48,18 @@ public class ProductServiceImpl implements ProductService {
 
     public Product createProduct(ProductRequest request) {
 
-       User seller = userRepository.findById(request.getSellerId()).orElseThrow(() -> new RuntimeException("Seller not found"));
+       User seller = authenticationService.getCurrentUser();
+
+       Optional<Product> existingProduct =
+            productRepository.findByTitleAndAddressAndSellerId(
+                    request.getTitle(),
+                    request.getAddress(),
+                    seller.getId()
+            );
+
+        if (existingProduct.isPresent()) {
+            throw new RuntimeException("Ya existe un producto paar este vendedor");
+        }
 
         Product product = Product.builder().title(request.getTitle())
                 .description(request.getDescription())

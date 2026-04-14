@@ -34,8 +34,8 @@ public class JwtService {
         return Jwts
                 .builder()
                 .subject(userDetails.getUsername()) // prueba@hotmail.com
+                .claim("role", userDetails.getAuthorities())
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .claim("Gisele", 1234567)
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSecretKey())
                 .compact();

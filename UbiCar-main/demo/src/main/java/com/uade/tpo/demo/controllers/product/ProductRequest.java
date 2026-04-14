@@ -13,6 +13,6 @@ public class ProductRequest {
     private Double discountPercentage;
     private Boolean discountActive;
     private String vehicleType; // después lo convertimos a enum
-    private Long sellerId; // importante para relacionar el producto con el usuario que lo vende
+    //private Long sellerId; // importante para relacionar el producto con el usuario que lo vende
 
 }
