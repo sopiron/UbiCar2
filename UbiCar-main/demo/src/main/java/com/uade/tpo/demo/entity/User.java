@@ -52,6 +52,7 @@ public class User implements UserDetails    {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Cart cart;
 
+    @Column(name = "active")
     private boolean active = true;
 
     //productos del vendedor

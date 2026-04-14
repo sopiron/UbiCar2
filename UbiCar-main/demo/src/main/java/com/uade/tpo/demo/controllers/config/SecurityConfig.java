@@ -6,6 +6,7 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -38,19 +39,36 @@ public class SecurityConfig {
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
                 http
                 
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()
-                );
-                                /* .csrf(AbstractHttpConfigurer::disable)
-                                .authorizeHttpRequests(req -> req.requestMatchers("/api/v1/auth/**").permitAll()
-                                                .requestMatchers("/error/**").permitAll()
-                                                .requestMatchers("/categories/**").hasAnyAuthority(Role.USER.name())
-                                                .anyRequest()
-                                                .authenticated())
-                                .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))
+                                .csrf(csrf -> csrf.disable())
+                                .sessionManagement(session ->
+                                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                                )
                                 .authenticationProvider(authenticationProvider)
-                                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);*/
+                                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                              
+                                .authorizeHttpRequests(auth -> auth
+
+                                                //end points publicos
+                                                .requestMatchers("/api/v1/auth/**").permitAll()
+                                                .requestMatchers("/error/**").permitAll()
+
+                                                .requestMatchers("/users/sellers/**")
+                                                .permitAll() // cualquier usuario puede ver los vendedores y sus perfiles
+
+                                                // user loggeado puede acceder a su perfil y actualizarlo
+                                                .requestMatchers("/users/user/obtener", "/users/user/actualizar")
+                                                .authenticated()
+
+                                                // admin puede acceder a los perfiles de cualquier usuario
+                                                .requestMatchers("/users/admin/**")
+                                                .hasRole("ADMIN")
+
+                                                .requestMatchers("/cart/**").authenticated()
+                                        
+                                                // cualquier otra request
+                                                .anyRequest().authenticated()
+
+                                                );
 
                 return http.build();
         }

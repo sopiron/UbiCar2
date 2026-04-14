@@ -29,8 +29,6 @@ public class AuthenticationService {
         @Autowired
         private CartRepository cartRepository;
 
-        @Autowired
-        private UserRepository userRepository;
 
 
         public AuthenticationResponse register(RegisterRequest request) {
@@ -45,6 +43,7 @@ public class AuthenticationService {
                                 .email(request.getEmail())
                                 .password(passwordEncoder.encode(request.getPassword()))
                                 .role(request.getRole())
+                                .active(true)
                                 .build();
 
                 repository.save(user);

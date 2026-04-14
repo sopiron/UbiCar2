@@ -3,6 +3,7 @@ package com.uade.tpo.demo.service.user;
 import java.util.List;
 
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -26,6 +27,8 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private AuthenticationService authenticationService;
+
+    private final PasswordEncoder passwordEncoder;
 
     //ver perfil de usuario
     public UserResponse getMyProfile() {
@@ -53,7 +56,7 @@ public class UserServiceImpl implements UserService {
         }
 
         if (request.getPassword() != null) {
-            user.setPassword(request.getPassword()); // 
+            user.setPassword(passwordEncoder.encode(request.getPassword())); // 
         }
 
         return mapToResponse(userRepository.save(user));

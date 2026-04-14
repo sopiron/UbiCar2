@@ -25,13 +25,13 @@ public class UserController {
     private UserService userService;
     
     //Mi perfil
-    @PreAuthorize("isAuthenticated()")  
+    
     @GetMapping("user/obtener") //Obtener datos del usuario logueado
     public ResponseEntity<UserResponse> getMyProfile() {
         return ResponseEntity.ok(userService.getMyProfile());
     }
 
-    @PreAuthorize("isAuthenticated()")
+    
     @PutMapping("user/actualizar") //Actualizar datos del usuario logueado
     public ResponseEntity<UserResponse> updateMyProfile(
             @RequestBody UpdateUserRequest request) {
@@ -42,14 +42,12 @@ public class UserController {
     //Vendedores
 
     //obetener vendedores
-    @PreAuthorize("hasAnyRole('SELLER','ADMIN')")
     @GetMapping("sellers")
     public ResponseEntity<List<UserResponse>> getSellers() {
         return ResponseEntity.ok(userService.getSellers());
     }
 
     //obetener vendedor por id
-    @PreAuthorize("hasAnyRole('SELLER','ADMIN')") //el comprador tamien puede ver el perfil del vendedor
     @GetMapping("sellers/{id}")
     public ResponseEntity<UserResponse> getSellerById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getSellerById(id));
@@ -58,19 +56,20 @@ public class UserController {
     //Administradores
 
     //obetener administradores
-    @PreAuthorize("hasRole('ADMIN')")
    @GetMapping("admin")
     public ResponseEntity<List<UserResponse>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
     
     //obetener usuario por id
-    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("admin/{id}")
     public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
     
+    //falta agregar obtener compradores de un vendedor
+    //falta agregar obtener compradores de un producto
+
     //actualizar rol de usuario 
     @PutMapping("admin/{id}/role")
     public ResponseEntity<UserResponse> changeRole(
