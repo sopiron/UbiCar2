@@ -52,12 +52,12 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/v1/auth/**").permitAll()
                                                 .requestMatchers("/error/**").permitAll()
 
-                                                .requestMatchers("/users/sellers/**")
-                                                .permitAll() // cualquier usuario puede ver los vendedores y sus perfiles
+                                                .requestMatchers("/users/sellers/**").permitAll() // cualquier usuario puede ver los vendedores y sus perfiles
+
+                                                .requestMatchers("images/mostrar").permitAll()
 
                                                 //productos
-                                                .requestMatchers("/products/obtener/**")
-                                                .permitAll() // cualquier usuario puede ver los productos disponibles y activos
+                                                .requestMatchers("/products/obtener/**").permitAll() // cualquier usuario puede ver los productos disponibles y activos
 
                                                 // user loggeado puede acceder a su perfil y actualizarlo
                                                 .requestMatchers("/users/user/obtener", "/users/user/actualizar")
@@ -69,8 +69,17 @@ public class SecurityConfig {
 
                                                 .requestMatchers("/cart/**").authenticated()
 
-                                                // solo el vendedor puede crear productos
-                                                .requestMatchers("/product/crear").hasAnyRole("SELLER")
+                                                // productos
+                                                .requestMatchers("/products/crear").hasAnyRole("SELLER")
+                                                .requestMatchers("/products/{id}").hasAnyRole("SELLER")
+                                                .requestMatchers("/products/{id}/active").hasAnyRole("SELLER","ADMIN")
+
+                                                //imagenes
+                                                .requestMatchers("images/agregar").hasAnyRole("SELLER")
+                                              
+                                                //reservas
+                                                .requestMatchers("/reservations/crear").authenticated() // cualquier usuario puede ver sus reservas
+                                                .requestMatchers("/reservations/user/{id}").hasAnyRole("USER")
                                         
                                                 // cualquier otra request
                                                 .anyRequest().authenticated()

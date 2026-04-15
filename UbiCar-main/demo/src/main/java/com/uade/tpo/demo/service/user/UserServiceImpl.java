@@ -3,7 +3,6 @@ package com.uade.tpo.demo.service.user;
 import java.util.List;
 
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -13,9 +12,11 @@ import com.uade.tpo.demo.controllers.user.UpdateUserRequest;
 import com.uade.tpo.demo.controllers.user.UserResponse;
 import com.uade.tpo.demo.entity.Role;
 import com.uade.tpo.demo.entity.User;
+import com.uade.tpo.demo.exceptions.cart.UserNotFoundException;
+import com.uade.tpo.demo.exceptions.user.UserNotSellerException;
 import com.uade.tpo.demo.repository.UserRepository;
 import com.uade.tpo.demo.service.AuthenticationService;
-
+import org.springframework.security.crypto.password.PasswordEncoder;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -28,14 +29,15 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private AuthenticationService authenticationService;
 
-    private final PasswordEncoder passwordEncoder;
-
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    
     //ver perfil de usuario
     public UserResponse getMyProfile() {
        User user = authenticationService.getCurrentUser();
         return userRepository.findByEmail(user.getEmail())
                 .map(this::mapToResponse)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new UserNotFoundException());
         //return mapToResponse(user);
     }
 
@@ -76,10 +78,10 @@ public class UserServiceImpl implements UserService {
     //obetener vendedor por id
     public UserResponse getSellerById(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new UserNotFoundException());
 
         if (user.getRole() != Role.SELLER) {
-            throw new RuntimeException("El usuario no es vendedor");
+            throw new UserNotSellerException();
         }
 
         return mapToResponse(user);
@@ -107,7 +109,7 @@ public class UserServiceImpl implements UserService {
      public UserResponse getUserById(Long id) {
 
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new UserNotFoundException());
 
         return mapToResponse(user);
     }
@@ -115,7 +117,7 @@ public class UserServiceImpl implements UserService {
     //actualizar rol de usuario
     public UserResponse changeRole(Long id, Role role) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new UserNotFoundException());
 
         user.setRole(role);
 
@@ -134,4 +136,3 @@ public class UserServiceImpl implements UserService {
     }
 
 }
-    

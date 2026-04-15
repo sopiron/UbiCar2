@@ -25,29 +25,29 @@ public class ReservationController {
     private ReservationService reservationService;
 
     @GetMapping ("/user/{userId}") //Ver mis reservas
-    public ResponseEntity<List<Reservation>> getReservationByUser(@PathVariable Long userId) {
+    public ResponseEntity<List<ReservationResponse>> getReservationByUser(@PathVariable Long userId) {
         return ResponseEntity.ok(reservationService.getReservationsByUserId(userId));
     }
     
     @GetMapping("/{id}") //Ver detalle de una reserva
-    public ResponseEntity<Reservation> getReservationById(@PathVariable Long id) {
+    public ResponseEntity<ReservationResponse> getReservationById(@PathVariable Long id) {
         return ResponseEntity.ok(reservationService.getReservationById(id));
     }
     
-    @PostMapping //Crear una reserva
-    public ResponseEntity<Reservation> createReservation(@RequestBody ReservationRequest request) {
+    @PostMapping ("/crear")//Crear una reserva
+    public ResponseEntity<ReservationResponse> createReservation(@RequestBody ReservationRequest request) {
         
         return ResponseEntity.ok(reservationService.createReservation(request));
     }
     
     @PostMapping("/{id}/pay")
-    public ResponseEntity<Reservation> payReservation(@PathVariable Long id) {
+    public ResponseEntity<ReservationResponse> payReservation(@PathVariable Long id) {
         
         return ResponseEntity.ok(reservationService.payReservation(id));
     }
 
     @PostMapping("{id}/cancel")
-    public ResponseEntity<Reservation> cancelReservation(@PathVariable Long id) {
+    public ResponseEntity<ReservationResponse> cancelReservation(@PathVariable Long id) {
         
         return ResponseEntity.ok(reservationService.cancelReservation(id));
     }

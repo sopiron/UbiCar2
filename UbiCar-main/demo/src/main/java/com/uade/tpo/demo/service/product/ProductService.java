@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.uade.tpo.demo.controllers.product.ProductRequest;
+import com.uade.tpo.demo.controllers.product.ProductResponse;
 import com.uade.tpo.demo.controllers.product.ProductStatusRequest;
 import com.uade.tpo.demo.controllers.product.ProductUpdateRequest;
 import com.uade.tpo.demo.entity.Product;
@@ -12,19 +13,23 @@ import com.uade.tpo.demo.entity.Product;
 public interface ProductService {
 
  //   
-    public List<Product> getAvailableProducts(LocalDate date);
+    public List<ProductResponse> getAvailableProducts(LocalDate date);
     
-    public List<Product> getActiveProducts();
-    
-//
-    public Optional<Product> getProductById(Long id);
+    public List<ProductResponse> getActiveProducts();
     
 //
-    public Product createProduct( ProductRequest request);
+    public ProductResponse getProductById(Long id);
+    
+    public List<ProductResponse> getProductsBySellerId(Long sellerId);
 
+    public List<ProductResponse> getProductsByVehicleType(com.uade.tpo.demo.entity.VehicleType vehicleType);
 
-    public Product updateProduct( Long id,  ProductUpdateRequest request);
+    public List<ProductResponse> getProductsByPriceRange(Double minPrice, Double maxPrice);
 
-    public Product updateProductState( Long id,  ProductStatusRequest request);
+    public ProductResponse createProduct( ProductRequest request);
+
+    public ProductResponse updateProduct( Long id,  ProductUpdateRequest request);
+
+    public ProductResponse updateProductState( Long id,  ProductStatusRequest request);
     
 }

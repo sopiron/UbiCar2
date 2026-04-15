@@ -22,4 +22,12 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findByVehicleType(VehicleType type); // filtro por tipo
 
     Optional<Product> findByTitleAndAddressAndSellerId(String title, String address, Long sellerId); // para validar que no exista un producto con mismo titulo, direccion y vendedor
+
+    List<Product> findBySellerId(Long sellerId); // filtro por vendedor
+
+    @Query(value = "select p from Product p where p.price >= :minPrice and p.price <= :maxPrice")
+    List<Product> findByPriceBetween(@Param("minPrice") Double minPrice, @Param("maxPrice") Double maxPrice);
+
+
+    
 }
