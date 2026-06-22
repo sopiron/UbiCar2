@@ -1,5 +1,6 @@
 package com.uade.tpo.demo.service.user;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -8,14 +9,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 
-
+import com.uade.tpo.demo.controllers.user.ChangeActiveStatusRequest;
 import com.uade.tpo.demo.controllers.user.UpdateUserRequest;
 import com.uade.tpo.demo.controllers.user.UserResponse;
+import com.uade.tpo.demo.entity.Product;
+import com.uade.tpo.demo.entity.Reservation;
+import com.uade.tpo.demo.repository.ReservationRepository;
+import com.uade.tpo.demo.entity.ReservationStatus;
 import com.uade.tpo.demo.entity.Role;
 import com.uade.tpo.demo.entity.User;
+import com.uade.tpo.demo.exceptions.cart.UserNotFoundException;
+import com.uade.tpo.demo.repository.ProductRepository;
 import com.uade.tpo.demo.repository.UserRepository;
 import com.uade.tpo.demo.service.AuthenticationService;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -27,6 +35,12 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private AuthenticationService authenticationService;
+
+    @Autowired
+    private ProductRepository productRepository;
+
+    @Autowired
+    private ReservationRepository reservationRepository;
 
     private final PasswordEncoder passwordEncoder;
 
@@ -53,6 +67,10 @@ public class UserServiceImpl implements UserService {
 
         if (request.getLastname() != null) {
         user.setLastName(request.getLastname());
+        }
+
+        if (request.getEmail() != null) {
+         user.setEmail(request.getEmail());
         }
 
         if (request.getPassword() != null) {
@@ -91,6 +109,7 @@ public class UserServiceImpl implements UserService {
     public List<UserResponse> getAllUsers() {
         return userRepository.findAll()
                 .stream()
+                .filter(user -> user.getRole() != Role.ADMIN)
                 .map(this::mapToResponse)
                 .toList();
     }
@@ -129,9 +148,70 @@ public class UserServiceImpl implements UserService {
         .firstName(user.getFirstName())
         .lastName(user.getLastName())
         .email(user.getEmail())
+        .active(user.isActive())
         .role(user.getRole())
         .build();
     }
 
+    @Transactional
+    public UserResponse changeActiveStatus(Long id, ChangeActiveStatusRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        user.setActive(request.isActive());
+
+        if (Boolean.FALSE.equals(request.isActive()) && user.getRole() == Role.SELLER) {
+            List<Product> products = productRepository.findBySellerId(user.getId());
+
+            for (Product product : products) {
+                product.setActive(false);
+            }
+
+            productRepository.saveAll(products);
+        
+
+            List<Reservation> reservations = reservationRepository
+                        .findByProduct_Seller_Id(
+                                user.getId()
+                        );
+                        System.out.println(
+        "Reservas encontradas: "
+        + reservations.size()
+);
+
+            LocalDate today = LocalDate.now();
+
+            for (Reservation reservation : reservations) {
+                boolean hasNotFinished =
+                        !reservation
+                                .getEndDate()
+                                .isBefore(today);
+
+                boolean isNotCancelled =
+                        reservation.getStatus()
+                                != ReservationStatus.CANCELLED;
+
+                if (
+                    hasNotFinished
+                    && isNotCancelled
+                ) {
+                    reservation.setStatus(
+                            ReservationStatus.CANCELLED
+                    );
+                }
+            }
+
+            reservationRepository.saveAll(reservations);
+        }
+
+        return mapToResponse(userRepository.save(user));
+        }
+
+     public void descuentoPrimeraCompraUsado(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException());
+        user.setPrimeraCompraRealizada(true);
+        userRepository.save(user);
+        }
 }
     

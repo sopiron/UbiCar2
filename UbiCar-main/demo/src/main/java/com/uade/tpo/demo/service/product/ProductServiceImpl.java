@@ -8,15 +8,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.neo4j.Neo4jProperties.Authentication;
 import org.springframework.stereotype.Service;
 
+import com.uade.tpo.demo.controllers.product.ProductDeleteRequest;
 import com.uade.tpo.demo.controllers.product.ProductRequest;
+import com.uade.tpo.demo.controllers.product.ProductResponse;
 import com.uade.tpo.demo.controllers.product.ProductStatusRequest;
 import com.uade.tpo.demo.controllers.product.ProductUpdateRequest;
+import com.uade.tpo.demo.entity.Image;
 import com.uade.tpo.demo.entity.Product;
 import com.uade.tpo.demo.entity.User;
 import com.uade.tpo.demo.entity.VehicleType;
+import com.uade.tpo.demo.exceptions.cart.ProductNotFoundException;
+import com.uade.tpo.demo.repository.ImageRepository;
 import com.uade.tpo.demo.repository.ProductRepository;
 import com.uade.tpo.demo.repository.UserRepository;
 import com.uade.tpo.demo.service.AuthenticationService;
+import com.uade.tpo.demo.service.location.LocationService;
 
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -30,23 +36,142 @@ public class ProductServiceImpl implements ProductService {
     @Autowired
     private AuthenticationService authenticationService;
 
-  
-    public List<Product> getAvailableProducts(LocalDate date) {
-        return productRepository.findAvailableProducts(date); 
+    @Autowired
+    private ImageRepository imageRepository;
+
+    @Autowired
+    private LocationService locationService;
+
+
+
+    private ProductResponse toResponse(Product product, boolean aplicarDescuentoPrimeraCompra) {
+    
+        List<Long> imageIds = imageRepository.findByProductId(product.getId()).stream().map(Image::getId).toList();
+
+        Double finalPrice = product.getPrice();
+        if (aplicarDescuentoPrimeraCompra) {
+            finalPrice = finalPrice * 0.85;
+        }
+
+        // double[] coordinates = locationService.getCoordinatesFromAddress(
+        // product.getAddress(),
+        // product.getZone()
+// );
+
+    return ProductResponse.builder()
+            .id(product.getId())
+            .title(product.getTitle())
+            .description(product.getDescription())
+            .address(product.getAddress())
+            .zone(product.getZone())
+            .latitude(product.getLatitude())
+            .longitude(product.getLongitude())
+            .price(product.getPrice())
+            .finalPrice(finalPrice)
+            .vehicleType(product.getVehicleType())
+            .active(product.isActive())
+            .deleted(product.isDeleted())
+            .sellerId(product.getSeller().getId())
+            .sellerName(product.getSeller().getFirstName() + " " + product.getSeller().getLastName())
+            .imageIds(imageIds)
+            .build();
+}
+
+
+    public List<ProductResponse> getAvailableProductsBetweenDates(LocalDate startDate, LocalDate endDate){
+        User user = authenticationService.getCurrentUserOrNull();
+        boolean descuento = user != null && !user.isPrimeraCompraRealizada();
+        return productRepository.findAvailableProductsBetweenDates(startDate, endDate)
+            .stream()
+            .filter(product -> !product.isDeleted())
+            .map(product -> toResponse(product, descuento))
+            .toList();
     }
 
 
-    public List<Product> getActiveProducts() {
-        return productRepository.findByActiveTrue();
+  
+    public List<ProductResponse> getAvailableProducts(LocalDate date) {
+        User user = authenticationService.getCurrentUserOrNull();
+        boolean descuento = user != null && !user.isPrimeraCompraRealizada();
+        
+         return productRepository.findAvailableProducts(date)
+                .stream()
+                .filter(product -> !product.isDeleted())
+                .map(p -> toResponse(p, descuento))
+                .toList();
+
+
+    }
+
+
+    public List<ProductResponse> getActiveProducts() {
+        User user = authenticationService.getCurrentUserOrNull();
+        boolean descuento = user != null && !user.isPrimeraCompraRealizada();
+        return productRepository.findByActiveTrue()
+                .stream()
+                .filter(product -> !product.isDeleted())
+                .filter(product -> product.isActive())
+                .map(p -> toResponse(p, descuento))
+                .toList();
     }
 
    
-    public Optional<Product> getProductById(Long id) {
-        return productRepository.findById(id);
+    public ProductResponse getProductById(Long id) {
+
+        User user = authenticationService.getCurrentUserOrNull();
+        boolean descuento = user != null && !user.isPrimeraCompraRealizada();
+
+        Product product = productRepository
+            .findById(id)
+            .orElseThrow(ProductNotFoundException::new);
+
+        if (product.isDeleted()) {
+            throw new ProductNotFoundException();
+        }
+        return toResponse(
+            product,
+            descuento);
+
     }
 
 
-    public Product createProduct(ProductRequest request) {
+    public List<ProductResponse> getProductsBySellerId(Long sellerId) {
+        return productRepository.findBySellerId(sellerId)
+            .stream()
+            .filter(product -> !product.isDeleted())
+            .filter(product -> product.isActive())
+            .map(product -> toResponse(product, false))
+            .toList();
+    }
+
+    public List<ProductResponse> getProductsByVehicleType(VehicleType vehicleType) {
+
+        User user = authenticationService.getCurrentUserOrNull();
+        boolean descuento = user != null && !user.isPrimeraCompraRealizada();
+        return productRepository.findByVehicleType(vehicleType)
+                .stream()
+                .filter(product -> !product.isDeleted())
+                .map(p -> toResponse(p, descuento))
+                .toList();
+    }
+
+    public List<ProductResponse> getProductsByPriceRange(Double minPrice, Double maxPrice) {
+        User user = authenticationService.getCurrentUserOrNull();
+        boolean descuento = user != null && !user.isPrimeraCompraRealizada();
+        return productRepository.findByPriceBetween(minPrice, maxPrice)
+                .stream()
+                .filter(product -> !product.isDeleted())
+                .map(p -> toResponse(p, descuento))
+                .toList();
+    }
+
+    
+    public ProductResponse createProduct(ProductRequest request) {
+
+        double[] coordinates = locationService.getCoordinatesFromAddress(
+                request.getAddress(),
+                request.getZone()
+        );
 
        User seller = authenticationService.getCurrentUser();
 
@@ -65,19 +190,31 @@ public class ProductServiceImpl implements ProductService {
                 .description(request.getDescription())
                 .price(request.getPrice())
                 .address(request.getAddress())
+                .zone(request.getZone())
+                .latitude(coordinates[0])
+                .longitude(coordinates[1])
                 .active(request.getActive())
-                .discountPercentage(request.getDiscountPercentage())
-                .discountActive(request.getDiscountActive())
+                .deleted(false)
                 .vehicleType(VehicleType.valueOf(request.getVehicleType().toUpperCase()))
                 .seller(seller)
                 .build();
 
-        return productRepository.save(product);
+        productRepository.save(product);
+
+        return toResponse(product, false);
     }
 
 
-    public Product updateProduct(Long id, ProductUpdateRequest request) {
-        Product product = productRepository.findById(id).orElseThrow(() -> new RuntimeException("Product not found"));
+    public ProductResponse updateProduct(Long id, ProductUpdateRequest request) {
+
+        User seller = authenticationService.getCurrentUser();
+
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+
+        if (!product.getSeller().getId().equals(seller.getId())) {
+            throw new RuntimeException("No tienes permiso para actualizar este producto");
+        }
         
             if (request.getTitle() != null) {
                 product.setTitle(request.getTitle());
@@ -91,24 +228,49 @@ public class ProductServiceImpl implements ProductService {
             if (request.getAddress() != null) {
                 product.setAddress(request.getAddress());
             }
-            if (request.getDiscountPercentage() != null) {
-                product.setDiscountPercentage(request.getDiscountPercentage());
-            }
-            if (request.getDiscountActive() != null) {
-                product.setDiscountActive(request.getDiscountActive());
-            }
             if (request.getVehicleType() != null) {
                 product.setVehicleType(VehicleType.valueOf(request.getVehicleType().toUpperCase()));
             }
 
-        return productRepository.save(product);
+             if (request.getZone() != null) {
+                product.setZone(request.getZone());
+            }
+
+            if (request.getAddress() != null || request.getZone() != null) {
+                double[] coordinates = locationService.getCoordinatesFromAddress(
+                        product.getAddress(),
+                        product.getZone()
+                );
+
+                product.setLatitude(coordinates[0]);
+                product.setLongitude(coordinates[1]);
+            }
+
+
+        productRepository.save(product);
+        return toResponse(product, false);
     }
 
 
-    public Product updateProductState(Long id, ProductStatusRequest request) {
-        Product product = productRepository.findById(id).orElseThrow(() -> new RuntimeException("Product not found"));
+    public ProductResponse updateProductState(Long id, ProductStatusRequest request) {
+        Product product = productRepository.findById(id).orElseThrow(ProductNotFoundException::new);
         product.setActive(request.getActive());
-        return productRepository.save(product);
+        productRepository.save(product);
+        return toResponse(product, false);
+       
     }
+
+    public ProductResponse updateProductDeleted(Long id, ProductDeleteRequest request) {
+    Product product = productRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+
+    product.setDeleted(request.getDeleted());
+
+    productRepository.save(product);
+
+    return toResponse(product, false);
+}
+
+    
 }
 

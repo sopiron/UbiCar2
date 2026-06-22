@@ -41,7 +41,7 @@ public class JwtService {
                 .compact();
     }
 
-    public boolean isTokenValid(String token, UserDetails userDetails) {
+    public boolean isTokenValid(String token, UserDetails userDetails) {  //valida si existe el usuario y si el token no esta expirado
         final String username = extractClaim(token, Claims::getSubject);
         return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
     }

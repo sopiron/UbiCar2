@@ -45,12 +45,19 @@ public class Product {
     private String address;
 
     @Column(nullable = true)
-    private boolean active;
-
-     private Double discountPercentage;
+    private String zone;
 
     @Column(nullable = true)
-    private boolean discountActive;
+    private Double latitude;
+
+    @Column(nullable = true)
+    private Double longitude;
+
+    @Column(nullable = true)
+    private boolean active;
+
+    @Column(nullable = false)
+    private boolean deleted = false;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = true)
@@ -62,12 +69,14 @@ public class Product {
     private User seller;
 
     @OneToMany(mappedBy = "product")
-    private List<ProductImage> images;
+    private List<Image> images;
 
     @OneToMany(mappedBy = "product")
     private List<BlockedDate> blockedDates;
 
     @OneToMany(mappedBy = "product")
     private List<Reservation> reservations;
+
+
 
 }

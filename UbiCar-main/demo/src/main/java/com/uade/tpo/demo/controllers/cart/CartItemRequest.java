@@ -7,6 +7,7 @@ import lombok.Data;
 @Data
 public class CartItemRequest {
     private Long productId;
-    private LocalDate date; 
+    private LocalDate startDate;
+    private LocalDate endDate;
 
 }

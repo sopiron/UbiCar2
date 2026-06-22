@@ -102,4 +102,8 @@ public class User implements UserDetails    {
         return active;
     }
 
+     @Column(nullable = false)
+    @Builder.Default
+    private boolean primeraCompraRealizada = false;
+
 }

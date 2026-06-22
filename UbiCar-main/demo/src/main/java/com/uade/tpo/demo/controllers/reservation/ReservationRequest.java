@@ -8,5 +8,6 @@ import lombok.Data;
 public class ReservationRequest {
     
     private Long productId;
-    private LocalDate date;
+    private LocalDate startDate;
+    private LocalDate endDate;
 }

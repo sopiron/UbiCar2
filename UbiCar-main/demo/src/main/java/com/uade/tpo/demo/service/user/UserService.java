@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.uade.tpo.demo.controllers.user.ChangeActiveStatusRequest;
 import com.uade.tpo.demo.controllers.user.UpdateUserRequest;
 import com.uade.tpo.demo.controllers.user.UserResponse;
 import com.uade.tpo.demo.entity.Role;
@@ -30,5 +31,9 @@ public interface UserService {
 
     //roles (admin)
     public UserResponse changeRole(Long id, Role role);
+
+    public UserResponse changeActiveStatus(Long id, ChangeActiveStatusRequest request);
+
+    public void descuentoPrimeraCompraUsado(Long id);
 }
     

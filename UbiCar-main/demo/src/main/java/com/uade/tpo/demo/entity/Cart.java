@@ -1,5 +1,6 @@
 package com.uade.tpo.demo.entity;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,7 +18,6 @@ public class Cart {
     private Long id;
 
     // Un carrito pertenece a un usuario
-    @JsonIgnore
     @OneToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -26,5 +26,6 @@ public class Cart {
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CartItem> items = new ArrayList<>();
 
+    private LocalDateTime expiresAt;
 
 }

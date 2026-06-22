@@ -24,17 +24,17 @@ public class BlockedDateController {
     @Autowired
     private BlockedDateService blockedDateService;
 
-    @GetMapping
+    @GetMapping("/obtener")
     public ResponseEntity<List<BlockedDate>> getBlockedDates(@PathVariable Long productId) {
         return ResponseEntity.ok(blockedDateService.getBlockedDates(productId)); //TODO: implement this method to get blocked dates by product id); 
     }
 
-    @PostMapping
+    @PostMapping("/crear")
     public ResponseEntity<BlockedDate> createBlockedDate(@PathVariable Long productId, @RequestBody BlockedDateRequest request) {
         return ResponseEntity.ok(blockedDateService.createBlockedDate(productId, request)); //TODO: implement this method to create a blocked date
     }
 
-    @DeleteMapping("/{date}")
+    @DeleteMapping("/{date}/borrar")
     public ResponseEntity<Void> deleteBlockedDate(@PathVariable Long productId, @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         blockedDateService.deleteBlockedDate(productId, date); //TODO: implement this method to delete a blocked date by product id and date
         return ResponseEntity.noContent().build();

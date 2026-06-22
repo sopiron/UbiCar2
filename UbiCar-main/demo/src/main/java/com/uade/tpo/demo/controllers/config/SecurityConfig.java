@@ -11,6 +11,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.security.config.Customizer;
+import java.util.List;
 
 import com.uade.tpo.demo.entity.Role;
 
@@ -38,7 +43,8 @@ public class SecurityConfig {
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
                 http
-                
+
+               .cors(Customizer.withDefaults())
                                 .csrf(csrf -> csrf.disable())
                                 .sessionManagement(session ->
                                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -55,9 +61,15 @@ public class SecurityConfig {
                                                 .requestMatchers("/users/sellers/**")
                                                 .permitAll() // cualquier usuario puede ver los vendedores y sus perfiles
 
+                                                .requestMatchers("images/mostrar").permitAll()
+
                                                 //productos
                                                 .requestMatchers("/products/obtener/**")
                                                 .permitAll() // cualquier usuario puede ver los productos disponibles y activos
+
+                                                //fechas bloqueadas
+                                                .requestMatchers("/products/{productId}/blocked-dates/obtener")
+                                                .permitAll()
 
                                                 // user loggeado puede acceder a su perfil y actualizarlo
                                                 .requestMatchers("/users/user/obtener", "/users/user/actualizar")
@@ -69,9 +81,27 @@ public class SecurityConfig {
 
                                                 .requestMatchers("/cart/**").authenticated()
 
-                                                // solo el vendedor puede crear productos
-                                                .requestMatchers("/product/crear").hasAnyRole("SELLER")
+                                                // productos
+                                                .requestMatchers("/products/crear").hasAnyRole("SELLER")
+                                                .requestMatchers("/products/{id}").hasAnyRole("SELLER")
+                                                .requestMatchers("/products/{id}/active").hasAnyRole("SELLER","ADMIN")
+                                                .requestMatchers("/products/{id}/deleted").hasAnyRole("SELLER","ADMIN") // solo el vendedor o el admin pueden eliminar un producto
                                         
+                                                //imagenes
+                                                .requestMatchers("images/agregar").hasAnyRole("SELLER")
+                                              
+                                                //reservas
+                                                .requestMatchers("/reservations/crear").authenticated() // cualquier usuario puede ver sus reservas
+                                                .requestMatchers("/reservations/user/{id}").hasAnyRole("USER")
+                                                .requestMatchers("/reservations/{id}").authenticated() // cualquier usuario puede ver el detalle de su reserva
+                                                .requestMatchers("/reservations/{id}/pay").authenticated() // cualquier usuario puede pagar
+                                                .requestMatchers("/reservations/{id}/cancel").authenticated() // cualquier usuario puede cancelar su reserva
+
+                                                //fechas bloqueadas
+
+                                                .requestMatchers("/products/{productId}/blocked-dates/crear").hasAnyRole("SELLER")
+                                                .requestMatchers("/products/{productId}/blocked-dates/{date}/borrar").hasAnyRole("SELLER")
+
                                                 // cualquier otra request
                                                 .anyRequest().authenticated()
 
@@ -79,4 +109,19 @@ public class SecurityConfig {
 
                 return http.build();
         }
+
+@Bean
+public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration configuration = new CorsConfiguration();
+
+    configuration.setAllowedOrigins(List.of("http://localhost:5174"));
+    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+    configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+    configuration.setAllowCredentials(true);
+
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", configuration);
+
+    return source;
+}
 }

@@ -17,4 +17,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // obtener usuarios por rol (SELLER, BUYER, ADMIN)
     List<User> findByRole(Role role);
+
+    
 }

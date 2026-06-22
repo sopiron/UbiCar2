@@ -2,6 +2,8 @@ package com.uade.tpo.demo.entity;
 
 import java.time.LocalDate;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -13,6 +15,7 @@ public class CartItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "cart_id")
     private Cart cart;
@@ -21,7 +24,8 @@ public class CartItem {
     @JoinColumn(name = "product_id")
     private Product product;
 
-    private LocalDate date;
+    private LocalDate startDate;
+    private LocalDate endDate;
 
     
 }

@@ -1,11 +1,14 @@
 package com.uade.tpo.demo.service.reservation;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.uade.tpo.demo.controllers.reservation.ReservationRequest;
+import com.uade.tpo.demo.controllers.reservation.ReservationResponse;
 import com.uade.tpo.demo.entity.BlockedDate;
 import com.uade.tpo.demo.entity.Product;
 import com.uade.tpo.demo.entity.Reservation;
@@ -15,6 +18,9 @@ import com.uade.tpo.demo.repository.BlockedDateRepository;
 import com.uade.tpo.demo.repository.ProductRepository;
 import com.uade.tpo.demo.repository.ReservationRepository;
 import com.uade.tpo.demo.service.AuthenticationService;
+import com.uade.tpo.demo.service.user.UserService;
+
+import jakarta.transaction.Transactional;
 
 @Service
 public class ReservationServiceImpl implements ReservationService {
@@ -31,53 +37,91 @@ public class ReservationServiceImpl implements ReservationService {
     @Autowired
     private AuthenticationService authenticationService;
 
-    public List<Reservation> getReservationsByUserId(Long userId) {
-        return reservationRepository.findByUserId(userId); //TODO: implement this method to find reservations by user id
+    @Autowired
+    private UserService userService;
+
+
+    private ReservationResponse toResponse(Reservation reservation) {
+        return ReservationResponse.builder()
+            .id(reservation.getId())
+            .productId(reservation.getProduct().getId())
+            .productTitle(reservation.getProduct().getTitle())
+            .startDate(reservation.getStartDate())
+            .endDate(reservation.getEndDate())
+            .total(reservation.getTotal())
+            .userId(reservation.getUser().getId())
+            .userEmail(reservation.getUser().getEmail())
+            .status(reservation.getStatus())
+            .build();
     }
 
 
-    public Reservation getReservationById(Long id) {
-        return reservationRepository.findById(id).orElseThrow(() -> new RuntimeException("Reservation not found")); //TODO: implement this method to find reservation by id
+    public List<ReservationResponse> getReservationsByUserId(Long userId) {
+         return reservationRepository.findByUserId(userId)
+        .stream()
+        .map(this::toResponse)
+        .toList(); 
     }
 
 
-    public Reservation createReservation(ReservationRequest request) {
+    public ReservationResponse getReservationById(Long id) {
+        return toResponse(reservationRepository.findById(id).orElseThrow(() -> new RuntimeException("La reserva no existe")));
+    }
+
+
+    public ReservationResponse createReservation(ReservationRequest request) {
        
        User user = authenticationService.getCurrentUser(); //TODO: implement this method to get the user from the token
 
        Product product = productRepository.findById(request.getProductId()).orElseThrow(() -> new RuntimeException("Product not found")); //TODO: implement this method to get the product by id
 
         if(!product.isActive()) {
-            throw new RuntimeException("Product is not active");
+            throw new RuntimeException("El producto no está activo");
         }
 
-        boolean blocked = blockedDateRepository.existsByProductIdAndDate(request.getProductId(), request.getDate()); //TODO: implement this method to check if the date is blocked for the product
-
-        if (blocked){
-            throw new RuntimeException("Product is not available for the selected date");
+         LocalDate current = request.getStartDate();
+        while (!current.isAfter(request.getEndDate())) {
+            if (blockedDateRepository.existsByProductIdAndDate(request.getProductId(), current)) {
+                throw new RuntimeException("El producto no está disponible el " + current);
+            }
+            current = current.plusDays(1);
         }
-       
+
+        if(user.getId().equals(product.getSeller().getId())) {
+            throw new RuntimeException("No puedes reservar tu propio producto");
+        }
+
+        // calcula total x dias
+        long days = ChronoUnit.DAYS.between(request.getStartDate(), request.getEndDate()) + 1;
+        double total = product.getPrice() * days;
+        
         Reservation reservation = Reservation.builder()
             .user(user)
             .product(product)
-            .date(request.getDate())
-            .total(product.getPrice())
+            .startDate(request.getStartDate())
+            .endDate(request.getEndDate())
+            .total(total)
             .status(ReservationStatus.PENDING)
             .build();
 
-        BlockedDate blockedDate = BlockedDate.builder()
-            .product(product)
-            .date(request.getDate())
-            .build();
-        blockedDateRepository.save(blockedDate); //TODO: implement this method to save the blocked date
+        LocalDate day = request.getStartDate();
+        while (!day.isAfter(request.getEndDate())) {
+            BlockedDate blockedDate = BlockedDate.builder()
+                    .product(product)
+                    .date(day)
+                    .build();
+            blockedDateRepository.save(blockedDate);
+            day = day.plusDays(1);
+        }
 
 
-        return reservationRepository.save(reservation);
+        return toResponse(reservationRepository.save(reservation));
     }
 
 
-    public Reservation payReservation(Long id) {
-        User user = authenticationService.getCurrentUser(); //TODO: implement this method to get the user from the token
+    @Transactional
+    public ReservationResponse payReservation(Long id) {
+        User user = authenticationService.getCurrentUser(); 
 
         Reservation reservation = reservationRepository.findById(id).orElseThrow(() -> new RuntimeException("Reservation not found"));
 
@@ -93,11 +137,17 @@ public class ReservationServiceImpl implements ReservationService {
             throw new RuntimeException("You cannot pay for a cancelled reservation");
         }
 
+        if (!user.isPrimeraCompraRealizada()) {
+            reservation.setTotal(reservation.getTotal() * 0.85);
+            userService.descuentoPrimeraCompraUsado(user.getId());
+        }
+
         reservation.setStatus(ReservationStatus.CONFIRMED);
-        return reservationRepository.save(reservation);
+        return toResponse(reservationRepository.save(reservation));
     }
 
-    public Reservation cancelReservation(Long id) {
+    @Transactional //Se hace todo lo del metodo o nada, si algo falla no se guarda nada en la base de datos
+    public ReservationResponse cancelReservation(Long id) {
         User user = authenticationService.getCurrentUser(); 
 
         Reservation reservation = reservationRepository.findById(id).orElseThrow(() -> new RuntimeException("Reservation not found"));
@@ -116,7 +166,11 @@ public class ReservationServiceImpl implements ReservationService {
 
         reservation.setStatus(ReservationStatus.CANCELLED);
 
-        blockedDateRepository.deleteByProductIdAndDate(reservation.getProduct().getId(), reservation.getDate()); 
-        return reservationRepository.save(reservation);
+        LocalDate day = reservation.getStartDate();
+                while (!day.isAfter(reservation.getEndDate())) {
+                    blockedDateRepository.deleteByProductIdAndDate(reservation.getProduct().getId(), day);
+                    day = day.plusDays(1);
+                }        
+        return toResponse(reservationRepository.save(reservation));
 }
 }

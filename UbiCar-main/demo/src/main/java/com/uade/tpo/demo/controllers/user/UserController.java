@@ -10,6 +10,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 
 @RestController
+@CrossOrigin(origins = "http://localhost:5174")
 @RequestMapping("users")
 public class UserController {
 
@@ -60,6 +62,11 @@ public class UserController {
     public ResponseEntity<List<UserResponse>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
+
+    @GetMapping("admin/users") //obetener usuarios (rol usuario)
+    public ResponseEntity<List<UserResponse>> getUsers() {
+        return ResponseEntity.ok(userService.getUsers());
+    }
     
     //obetener usuario por id
     @GetMapping("admin/{id}")
@@ -82,5 +89,12 @@ public class UserController {
     }
 
     //cambiar el estado de un usuario (activo/inactivo)
-
+    @PutMapping("admin/{id}/active")
+    public ResponseEntity<UserResponse> changeActiveStatus(
+        @PathVariable Long id,
+        @RequestBody ChangeActiveStatusRequest request) {
+            return ResponseEntity.ok(
+                userService.changeActiveStatus(id, request)
+            );
+        }
 }
